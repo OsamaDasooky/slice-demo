@@ -26,6 +26,11 @@ const PAGE_LABEL: Record<Route["name"], string> = {
   feed: "Feed & Response Files",
 }
 
+/** The Checker's queue is labeled "Approval Queue"; the Maker's stays "Requested Queue". */
+function queueLabel(role: Role) {
+  return role === "Slice Admin Checker" ? "Approval Queue" : "Requested Queue"
+}
+
 /** A role may only land on pages its own module sections expose. */
 function isRouteAllowed(role: Role, route: Route) {
   if (route.name === "hub") return true
@@ -73,7 +78,9 @@ function Shell() {
       ? `BIN ${route.groupName}`
       : route.name === "offer-details"
         ? `Offer ${route.offerId}`
-        : PAGE_LABEL[route.name]
+        : route.name === "requested"
+          ? queueLabel(role)
+          : PAGE_LABEL[route.name]
 
   const trail: Array<{ label: string; route?: Route }> = onHub
     ? [{ label: "Settings" }, { label: "Slice Configuration" }]

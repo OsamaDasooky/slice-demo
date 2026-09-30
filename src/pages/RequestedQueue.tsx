@@ -64,7 +64,7 @@ export function RequestedQueue() {
   return (
     <>
       <PageTitle
-        title="Requested Queue"
+        title={isChecker ? "Approval Queue" : "Requested Queue"}
         count={scoped.length}
         description={
           isChecker

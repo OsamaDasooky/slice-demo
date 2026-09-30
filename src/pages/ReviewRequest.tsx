@@ -48,7 +48,7 @@ export function ReviewRequest({ requestId }: { requestId: string }) {
         className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
       >
         <ArrowLeft className="size-4" />
-        Back to Requested Queue
+        Back to {isChecker ? "Approval Queue" : "Requested Queue"}
       </button>
 
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

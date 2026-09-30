@@ -38,7 +38,7 @@ const MAKER_SECTIONS: ModuleSection[] = [
 
 const CHECKER_SECTIONS: ModuleSection[] = [
   {
-    label: "Requested Queue",
+    label: "Approval Queue",
     description:
       "Review and approve pending offer, BIN, and merchant mapping changes",
     route: { name: "requested" },
