@@ -146,6 +146,7 @@ export function BinPanel({
 
     const normalised: BinGroup = {
       ...draft,
+      action: mode === "modify" ? "Modify" : "Add",
       groupName: draft.groupName.trim().toUpperCase(),
       bankShortName: draft.bankShortName.trim().toUpperCase(),
       bin: draft.bin.trim(),
@@ -185,12 +186,12 @@ export function BinPanel({
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Action" required>
           <Select
-            value={draft.action}
-            onChange={(value) => update("action", value as BinGroup["action"])}
+            value={mode === "modify" ? "Modify" : "Add"}
+            disabled
+            onChange={() => undefined}
             options={[
               { value: "Add", label: "Add" },
               { value: "Modify", label: "Modify" },
-              { value: "Delete", label: "Delete" },
             ]}
           />
         </Field>

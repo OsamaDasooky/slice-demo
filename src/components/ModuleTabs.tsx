@@ -58,17 +58,25 @@ export function tabSections(role: Role): ModuleSection[] {
   )
 }
 
-/** Sub-pages roll up to the tab that owns them. */
+/**
+ * Sub-pages roll up to the tab that owns them. Detail pages (offer-details,
+ * bin-details) are intentionally excluded — they hide the tab strip entirely.
+ */
 const TAB_OWNER: Partial<Record<Route["name"], Route["name"]>> = {
-  "offer-details": "offers",
-  "bin-details": "bins",
   review: "requested",
 }
+
+const NO_TABS_ROUTES: Array<Route["name"]> = ["offer-details", "bin-details"]
 
 export function ModuleTabs() {
   const { role, route, navigate } = useStore()
   const sections = tabSections(role)
-  if (sections.length === 0 || route.name === "hub") return null
+  if (
+    sections.length === 0 ||
+    route.name === "hub" ||
+    NO_TABS_ROUTES.includes(route.name)
+  )
+    return null
 
   const activeName = TAB_OWNER[route.name] ?? route.name
 

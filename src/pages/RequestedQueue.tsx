@@ -16,6 +16,7 @@ import {
   StatusBadge,
   inputClass,
 } from "../components/primitives"
+import { PageHeading } from "../components/PageHeading"
 
 const TYPE_OPTIONS = [
   { value: "All", label: "All" },
@@ -63,6 +64,7 @@ export function RequestedQueue() {
 
   return (
     <>
+      <PageHeading>
       <PageTitle
         title={isChecker ? "Approval Queue" : "Requested Queue"}
         count={scoped.length}
@@ -72,6 +74,7 @@ export function RequestedQueue() {
             : "Every change you submitted, with its current approval outcome."
         }
       />
+      </PageHeading>
 
       <div className="mb-5 grid gap-5 sm:max-w-3xl sm:grid-cols-3">
         <Field label="Type">

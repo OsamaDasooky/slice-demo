@@ -66,7 +66,7 @@ export type Mapping = {
   merchantId: string
   groupName: string
   actionDate: string
-  action: "Integrate" | "Delete"
+  action: "Add" | "Modify" | "Integrate" | "Delete"
   channel: Channel
   acquirer: "NI"
   createdAt: string
@@ -130,7 +130,7 @@ export type PortalFile = {
 export type Route =
   | { name: "hub" }
   | { name: "offers" }
-  | { name: "offer-details"; offerId: string }
+  | { name: "offer-details"; offerId: string; tenor?: string }
   | { name: "bins" }
   | { name: "bin-details"; groupName: string }
   | { name: "mapping" }

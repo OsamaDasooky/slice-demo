@@ -38,7 +38,7 @@ export function MappingPanel({
             merchantId: "",
             groupName: bins[0]?.groupName ?? "",
             actionDate: "",
-            action: "Integrate",
+            action: "Add",
             channel: "POS",
             acquirer: "NI",
             createdAt: "",
@@ -81,6 +81,7 @@ export function MappingPanel({
 
     const normalised: Mapping = {
       ...draft,
+      action: mode === "modify" ? "Modify" : "Add",
       merchantId: draft.merchantId.trim(),
       createdAt: draft.createdAt || "Pending approval",
     }
@@ -155,11 +156,12 @@ export function MappingPanel({
 
         <Field label="Action" required>
           <Select
-            value={draft.action}
-            onChange={(value) => update("action", value as Mapping["action"])}
+            value={mode === "modify" ? "Modify" : "Add"}
+            disabled
+            onChange={() => undefined}
             options={[
-              { value: "Integrate", label: "Integrate" },
-              { value: "Delete", label: "Delete" },
+              { value: "Add", label: "Add" },
+              { value: "Modify", label: "Modify" },
             ]}
           />
         </Field>

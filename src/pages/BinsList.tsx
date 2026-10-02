@@ -11,6 +11,7 @@ import {
   PageTitle,
   Row,
 } from "../components/primitives"
+import { PageHeading } from "../components/PageHeading"
 import { BinPanel } from "../panels/BinPanel"
 import { BulkUploadPanel } from "../panels/BulkUploadPanel"
 
@@ -28,6 +29,7 @@ export function BinsList() {
 
   return (
     <>
+      <PageHeading>
       <PageTitle
         title="BINs"
         count={bins.length}
@@ -46,6 +48,7 @@ export function BinsList() {
           ) : null
         }
       />
+      </PageHeading>
 
       <DataTable
         headers={

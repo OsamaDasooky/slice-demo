@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Eye, Pencil, Plus, Trash2, Upload } from "lucide-react"
+import { Eye, ListPlus, Pencil, Plus, Trash2, Upload } from "lucide-react"
 import { useStore } from "../store"
 import type { Offer } from "../types"
 import {
@@ -11,6 +11,7 @@ import {
   PageTitle,
   Row,
 } from "../components/primitives"
+import { PageHeading } from "../components/PageHeading"
 import { OfferPanel } from "../panels/OfferPanel"
 import { BulkUploadPanel } from "../panels/BulkUploadPanel"
 
@@ -25,17 +26,20 @@ export function OffersList() {
   } = useStore()
   const isMaker = role === "Slice Admin Maker"
 
-  const [panel, setPanel] = useState<{ mode: "add" | "modify"; offer?: Offer } | null>(
-    null,
-  )
+  const [panel, setPanel] = useState<{
+    mode: "add" | "modify" | "add-tenure"
+    offer?: Offer
+    tenor?: string
+  } | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null)
 
   return (
     <>
+      <PageHeading>
       <PageTitle
         title="Offers"
-        count={offers.length}
+        count={offers.reduce((total, offer) => total + Math.max(offer.tenures.length, 1), 0)}
         actions={
           isMaker ? (
             <>
@@ -51,6 +55,7 @@ export function OffersList() {
           ) : null
         }
       />
+      </PageHeading>
 
       <DataTable
         headers={
@@ -67,16 +72,23 @@ export function OffersList() {
           ) : undefined
         }
       >
-        {offers.map((offer, index) => {
+        {offers.flatMap((offer) => {
+          const rows = offer.tenures.length > 0 ? offer.tenures : [null]
+          return rows.map((tenure) => ({ offer, tenure }))
+        }).map(({ offer, tenure }, index) => {
           const linked = isOfferLinked(offer.offerId)
           const pending = hasPendingFor("Offer", offer.offerId)
           return (
-            <Row key={offer.offerId} index={index}>
+            <Row key={`${offer.offerId}-${tenure?.tenor ?? "none"}-${index}`} index={index}>
               <td className="px-4 py-3">
                 <button
                   type="button"
                   onClick={() =>
-                    navigate({ name: "offer-details", offerId: offer.offerId })
+                    navigate({
+                      name: "offer-details",
+                      offerId: offer.offerId,
+                      tenor: tenure?.tenor,
+                    })
                   }
                   className="font-semibold text-primary underline underline-offset-4 hover:opacity-80"
                 >
@@ -84,7 +96,7 @@ export function OffersList() {
                 </button>
               </td>
               <td className="px-4 py-3">
-                {offer.tenures.map((item) => item.tenor).join(", ")} months
+                {tenure ? `${tenure.tenor} months` : "—"}
               </td>
               <td className="px-4 py-3">{offer.createdAt}</td>
               {isMaker && (
@@ -98,6 +110,7 @@ export function OffersList() {
                           navigate({
                             name: "offer-details",
                             offerId: offer.offerId,
+                            tenor: tenure?.tenor,
                           }),
                       },
                       {
@@ -107,7 +120,17 @@ export function OffersList() {
                         disabledHint: pending
                           ? "A change request is already pending"
                           : undefined,
-                        onSelect: () => setPanel({ mode: "modify", offer }),
+                        onSelect: () =>
+                          setPanel({ mode: "modify", offer, tenor: tenure?.tenor }),
+                      },
+                      {
+                        label: "Add Tenure",
+                        icon: <ListPlus className="size-4" />,
+                        disabled: pending,
+                        disabledHint: pending
+                          ? "A change request is already pending"
+                          : undefined,
+                        onSelect: () => setPanel({ mode: "add-tenure", offer }),
                       },
                       {
                         label: "Delete",
@@ -141,6 +164,7 @@ export function OffersList() {
           open
           mode={panel.mode}
           offer={panel.offer}
+          tenor={panel.tenor}
           onClose={() => setPanel(null)}
         />
       )}

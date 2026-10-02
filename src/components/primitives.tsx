@@ -472,17 +472,27 @@ export function Input({
   onChange,
   placeholder,
   invalid,
+  readOnly,
+  disabled,
 }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   invalid?: boolean
+  readOnly?: boolean
+  disabled?: boolean
 }) {
   return (
     <input
-      className={cn(inputClass, invalid && "border-destructive")}
+      className={cn(
+        inputClass,
+        invalid && "border-destructive",
+        (readOnly || disabled) && "cursor-not-allowed text-muted-foreground",
+      )}
       value={value}
       placeholder={placeholder}
+      readOnly={readOnly || disabled}
+      disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
     />
   )
@@ -493,16 +503,22 @@ export function Textarea({
   onChange,
   placeholder,
   rows = 3,
+  disabled,
 }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   rows?: number
+  disabled?: boolean
 }) {
   return (
     <textarea
       rows={rows}
-      className="w-full resize-none rounded-[3px] border border-input bg-transparent px-3 py-2 text-sm text-portal-ink outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary"
+      disabled={disabled}
+      className={cn(
+        "w-full resize-none rounded-[3px] border border-input bg-transparent px-3 py-2 text-sm text-portal-ink outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary",
+        disabled && "cursor-not-allowed text-muted-foreground",
+      )}
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
@@ -515,15 +531,22 @@ export function DateInput({
   value,
   onChange,
   invalid,
+  disabled,
 }: {
   value: string
   onChange: (value: string) => void
   invalid?: boolean
+  disabled?: boolean
 }) {
   return (
     <input
       type="date"
-      className={cn(inputClass, invalid && "border-destructive")}
+      disabled={disabled}
+      className={cn(
+        inputClass,
+        invalid && "border-destructive",
+        disabled && "cursor-not-allowed text-muted-foreground",
+      )}
       value={toDateInput(value)}
       onChange={(event) => onChange(fromDateInput(event.target.value))}
     />
@@ -535,15 +558,22 @@ export function Select({
   onChange,
   options,
   invalid,
+  disabled,
 }: {
   value: string
   onChange: (value: string) => void
   options: Array<{ value: string; label: string }>
   invalid?: boolean
+  disabled?: boolean
 }) {
   return (
     <select
-      className={cn(inputClass, invalid && "border-destructive")}
+      disabled={disabled}
+      className={cn(
+        inputClass,
+        invalid && "border-destructive",
+        disabled && "cursor-not-allowed text-muted-foreground",
+      )}
       value={value}
       onChange={(event) => onChange(event.target.value)}
     >

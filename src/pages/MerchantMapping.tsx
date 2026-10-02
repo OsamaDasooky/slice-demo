@@ -11,6 +11,7 @@ import {
   PageTitle,
   Row,
 } from "../components/primitives"
+import { PageHeading } from "../components/PageHeading"
 import { MappingPanel } from "../panels/MappingPanel"
 import { BulkUploadPanel } from "../panels/BulkUploadPanel"
 
@@ -27,6 +28,7 @@ export function MerchantMapping() {
 
   return (
     <>
+      <PageHeading>
       <PageTitle
         title="Merchant Mapping"
         count={mappings.length}
@@ -45,6 +47,7 @@ export function MerchantMapping() {
           ) : null
         }
       />
+      </PageHeading>
 
       <DataTable
         headers={

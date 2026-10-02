@@ -1,8 +1,52 @@
 import { feeTypeLabel, formatAmount, sliceFlagLabel } from "../lib/format"
-import type { BinGroup, Mapping, Offer } from "../types"
+import type { BinGroup, Mapping, Offer, Tenure } from "../types"
 import { DetailGrid, Row, SectionTitle } from "./primitives"
 
-export function OfferDetailView({ offer }: { offer: Offer }) {
+function tenureDetailItems(tenure: Tenure) {
+  return [
+    { label: "Fee Type", value: feeTypeLabel(tenure.feeType) },
+    { label: "Commission Type", value: feeTypeLabel(tenure.commissionType) },
+    { label: "Min Commission", value: tenure.minCommission || "—" },
+    { label: "Max Commission", value: tenure.maxCommission || "—" },
+  ]
+}
+
+function offerDetailItems(offer: Offer) {
+  return [
+    { label: "Description", value: offer.description || "—" },
+    { label: "Action Type", value: offer.actionType },
+    { label: "Channel", value: offer.channel },
+    { label: "Acquirer", value: offer.acquirer },
+    { label: "Subvention %", value: offer.subvention || "0.00" },
+    { label: "Slice Flag", value: sliceFlagLabel(offer.sliceFlag) },
+    { label: "Expiry Date", value: offer.expiryDate || "—" },
+    { label: "Action Date", value: offer.actionDate },
+    {
+      label: "Merchant Fee TYP",
+      value: feeTypeLabel(offer.merchantFeeTyp),
+    },
+    { label: "Merchant Fee", value: offer.merchantFee || "—" },
+    { label: "Bank Rev Per", value: offer.bankRevPer || "—" },
+    {
+      label: "Merchant Commission Type",
+      value: feeTypeLabel(offer.merchantCommissionType),
+    },
+    {
+      label: "Merchant Commission",
+      value: offer.merchantCommission || "—",
+    },
+    { label: "Creation Date", value: offer.createdAt || "—" },
+  ]
+}
+
+export function OfferDetailView({
+  offer,
+  tenure,
+}: {
+  offer: Offer
+  /** When set, the offer details section shows this tenure's values. */
+  tenure?: Tenure
+}) {
   return (
     <>
       <SectionTitle title="Tenure details" />
@@ -20,19 +64,19 @@ export function OfferDetailView({ offer }: { offer: Offer }) {
             </tr>
           </thead>
           <tbody>
-            {offer.tenures.map((tenure, index) => (
-              <Row key={`${tenure.tenor}-${index}`} index={index}>
+            {(tenure ? [tenure] : offer.tenures).map((item, index) => (
+              <Row key={`${item.tenor}-${index}`} index={index}>
                 <td className="px-4 py-3 font-semibold text-portal-ink">
-                  {tenure.tenor}
+                  {item.tenor}
                 </td>
-                <td className="px-4 py-3">{formatAmount(tenure.minAmount)}</td>
-                <td className="px-4 py-3">{formatAmount(tenure.maxAmount)}</td>
-                <td className="px-4 py-3">{tenure.feeType}</td>
+                <td className="px-4 py-3">{formatAmount(item.minAmount)}</td>
+                <td className="px-4 py-3">{formatAmount(item.maxAmount)}</td>
+                <td className="px-4 py-3">{item.feeType}</td>
                 <td className="px-4 py-3">
-                  {tenure.commissionType === "P" ? "Percentage" : "Flat"}
+                  {item.commissionType === "P" ? "Percentage" : "Flat"}
                 </td>
-                <td className="px-4 py-3">{tenure.minCommission || "—"}</td>
-                <td className="px-4 py-3">{tenure.maxCommission || "—"}</td>
+                <td className="px-4 py-3">{item.minCommission || "—"}</td>
+                <td className="px-4 py-3">{item.maxCommission || "—"}</td>
               </Row>
             ))}
           </tbody>
@@ -42,29 +86,8 @@ export function OfferDetailView({ offer }: { offer: Offer }) {
       <SectionTitle title="Offer details" />
       <DetailGrid
         items={[
-          { label: "Description", value: offer.description || "—" },
-          { label: "Action Type", value: offer.actionType },
-          { label: "Channel", value: offer.channel },
-          { label: "Acquirer", value: offer.acquirer },
-          { label: "Subvention %", value: offer.subvention || "0.00" },
-          { label: "Slice Flag", value: sliceFlagLabel(offer.sliceFlag) },
-          { label: "Expiry Date", value: offer.expiryDate || "—" },
-          { label: "Action Date", value: offer.actionDate },
-          {
-            label: "Merchant Fee TYP",
-            value: feeTypeLabel(offer.merchantFeeTyp),
-          },
-          { label: "Merchant Fee", value: offer.merchantFee || "—" },
-          { label: "Bank Rev Per", value: offer.bankRevPer || "—" },
-          {
-            label: "Merchant Commission Type",
-            value: feeTypeLabel(offer.merchantCommissionType),
-          },
-          {
-            label: "Merchant Commission",
-            value: offer.merchantCommission || "—",
-          },
-          { label: "Creation Date", value: offer.createdAt || "—" },
+          ...(tenure ? tenureDetailItems(tenure) : []),
+          ...offerDetailItems(offer),
         ]}
       />
     </>

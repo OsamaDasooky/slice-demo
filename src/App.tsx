@@ -1,5 +1,7 @@
+import { useState } from "react"
 import { Breadcrumb, Header } from "./components/Header"
 import { ModuleTabs, moduleSections } from "./components/ModuleTabs"
+import { PageHeadingProvider } from "./components/PageHeading"
 import { Toaster } from "./components/Toaster"
 import { StoreProvider, useStore } from "./store"
 import { BinDetails } from "./pages/BinDetails"
@@ -51,7 +53,7 @@ function CurrentPage() {
     case "offers":
       return <OffersList />
     case "offer-details":
-      return <OfferDetails offerId={route.offerId} />
+      return <OfferDetails offerId={route.offerId} tenor={route.tenor} />
     case "bins":
       return <BinsList />
     case "bin-details":
@@ -69,9 +71,18 @@ function CurrentPage() {
   }
 }
 
+const LIST_ROUTES: Array<Route["name"]> = [
+  "offers",
+  "bins",
+  "mapping",
+  "requested",
+]
+
 function Shell() {
   const { role, route } = useStore()
+  const [headingHost, setHeadingHost] = useState<HTMLDivElement | null>(null)
   const onHub = role === "Unauthorized" || route.name === "hub"
+  const isList = LIST_ROUTES.includes(route.name)
 
   const leaf =
     route.name === "bin-details"
@@ -94,9 +105,19 @@ function Shell() {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <Breadcrumb trail={trail} />
+      {isList && (
+        <div
+          ref={setHeadingHost}
+          className="mx-auto max-w-[1200px] px-5 pt-8"
+        />
+      )}
       <ModuleTabs />
-      <main className="mx-auto max-w-[1200px] px-5 py-8">
-        <CurrentPage />
+      <main
+        className={`mx-auto max-w-[1200px] px-5 ${isList ? "pt-6 pb-8" : "py-8"}`}
+      >
+        <PageHeadingProvider host={headingHost}>
+          <CurrentPage />
+        </PageHeadingProvider>
       </main>
       <Toaster />
     </div>

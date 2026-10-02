@@ -5,7 +5,13 @@ import { OfferDetailView } from "../components/EntityViews"
 import { Button, Card, EmptyState, StatusBadge } from "../components/primitives"
 import { OfferPanel } from "../panels/OfferPanel"
 
-export function OfferDetails({ offerId }: { offerId: string }) {
+export function OfferDetails({
+  offerId,
+  tenor,
+}: {
+  offerId: string
+  tenor?: string
+}) {
   const { role, offers, navigate, hasPendingFor } = useStore()
   const offer = offers.find((item) => item.offerId === offerId)
   const [editing, setEditing] = useState(false)
@@ -23,6 +29,8 @@ export function OfferDetails({ offerId }: { offerId: string }) {
   }
 
   const pending = hasPendingFor("Offer", offer.offerId)
+  const tenure =
+    offer.tenures.find((item) => item.tenor === tenor) ?? offer.tenures[0]
 
   return (
     <>
@@ -43,7 +51,10 @@ export function OfferDetails({ offerId }: { offerId: string }) {
           <h1 className="text-[2rem] font-light leading-tight tracking-wide text-portal-ink">
             {offer.offerId}
           </h1>
-          <p className="text-sm text-muted-foreground">{offer.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {offer.name}
+            {tenure && ` · ${tenure.tenor} months`}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <StatusBadge status="Approved" />
@@ -66,13 +77,14 @@ export function OfferDetails({ offerId }: { offerId: string }) {
         </p>
       )}
 
-      <OfferDetailView offer={offer} />
+      <OfferDetailView offer={offer} tenure={tenure} />
 
       {editing && (
         <OfferPanel
           open
           mode="modify"
           offer={offer}
+          tenor={tenure?.tenor}
           onClose={() => setEditing(false)}
         />
       )}

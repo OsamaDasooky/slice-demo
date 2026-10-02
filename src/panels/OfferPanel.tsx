@@ -1,10 +1,8 @@
 import { useMemo, useState } from "react"
-import { Plus, XCircle } from "lucide-react"
 import { useStore } from "../store"
 import { isPastDate, parseActionDate, sliceFlagLabel } from "../lib/format"
 import type { FieldChange, Offer, Tenure } from "../types"
 import {
-  Button,
   DateInput,
   Field,
   Input,
@@ -123,18 +121,39 @@ export function OfferPanel({
   open,
   mode,
   offer,
+  tenor,
   onClose,
 }: {
   open: boolean
-  mode: "add" | "modify"
+  mode: "add" | "modify" | "add-tenure"
   offer?: Offer
+  /** Tenure row that opened this panel. Edit shows only this tenure. */
+  tenor?: string
   onClose: () => void
 }) {
   const { offers, submitRequest, pushToast } = useStore()
-  const initial = useMemo(
-    () => (mode === "modify" && offer ? structuredClone(offer) : blankOffer()),
-    [mode, offer],
-  )
+  const actionType: Offer["actionType"] = mode === "modify" ? "Modify" : "Add"
+  const locked = mode === "add-tenure"
+
+  const initial = useMemo(() => {
+    if (mode === "add-tenure" && offer) {
+      return {
+        ...structuredClone(offer),
+        actionType: "Add" as const,
+        tenures: [{ ...EMPTY_TENURE }],
+      }
+    }
+    if (mode === "modify" && offer) {
+      const selected =
+        offer.tenures.find((item) => item.tenor === tenor) ?? offer.tenures[0]
+      return {
+        ...structuredClone(offer),
+        actionType: "Modify" as const,
+        tenures: selected ? [structuredClone(selected)] : [{ ...EMPTY_TENURE }],
+      }
+    }
+    return blankOffer()
+  }, [mode, offer, tenor])
   const [draft, setDraft] = useState<Offer>(initial)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -170,11 +189,26 @@ export function OfferPanel({
       next.offerId = "An offer with this ID already exists"
     }
 
+    const seenTenors = new Set<string>()
+    const existingTenors = new Set(
+      mode === "add-tenure"
+        ? (offer?.tenures ?? []).map((item) => item.tenor.trim())
+        : mode === "modify"
+          ? (offer?.tenures ?? [])
+              .filter((item) => item.tenor !== tenor)
+              .map((item) => item.tenor.trim())
+          : [],
+    )
+
     if (!draft.name.trim()) next.name = "Offer name is required"
 
     draft.tenures.forEach((item, index) => {
       if (!/^\d{1,2}$/.test(item.tenor.trim())) {
         next[`tenor-${index}`] = "Numeric, maximum 2 digits"
+      } else if (existingTenors.has(item.tenor.trim()) || seenTenors.has(item.tenor.trim())) {
+        next[`tenor-${index}`] = "This tenure already exists on the offer"
+      } else {
+        seenTenors.add(item.tenor.trim())
       }
       if (
         item.minAmount &&
@@ -217,18 +251,30 @@ export function OfferPanel({
       ...draft,
       offerId: draft.offerId.trim().toUpperCase(),
       name: draft.name.trim(),
+      actionType,
       subvention: draft.subvention || "0.00",
       createdAt: draft.createdAt || "Pending approval",
     }
 
-    if (mode === "modify" && offer) {
+    if ((mode === "modify" || mode === "add-tenure") && offer) {
+      const submitted =
+        mode === "add-tenure"
+          ? { ...normalised, tenures: [...offer.tenures, ...normalised.tenures] }
+          : {
+              ...normalised,
+              tenures: offer.tenures.map((item) =>
+                item.tenor === (tenor ?? offer.tenures[0]?.tenor)
+                  ? normalised.tenures[0]
+                  : item,
+              ),
+            }
       submitRequest({
         type: "Offer",
         action: "Modify",
-        entityName: `${normalised.offerId} · ${normalised.name}`,
+        entityName: `${submitted.offerId} · ${submitted.name}`,
         targetId: offer.offerId,
-        changes: diffOffers(offer, normalised),
-        payload: { offer: normalised },
+        changes: diffOffers(offer, submitted),
+        payload: { offer: submitted },
       })
     } else {
       submitRequest({
@@ -246,7 +292,9 @@ export function OfferPanel({
     <SidePanel
       open={open}
       title={mode === "modify" ? `Modify Offer: ${offer?.offerId}` : "Add New Offer"}
-      submitLabel={mode === "modify" ? "Submit changes" : "Add offer"}
+      submitLabel={
+        mode === "modify" ? "Submit changes" : mode === "add-tenure" ? "Submit tenure" : "Add offer"
+      }
       onClose={onClose}
       onSubmit={handleSubmit}
     >
@@ -256,6 +304,7 @@ export function OfferPanel({
             value={draft.offerId}
             invalid={Boolean(errors.offerId)}
             placeholder="e.g. FAB0004"
+            disabled={locked}
             onChange={(value) => update("offerId", value)}
           />
         </Field>
@@ -264,15 +313,15 @@ export function OfferPanel({
             value={draft.name}
             invalid={Boolean(errors.name)}
             placeholder="e.g. Festive Slice 10%"
+            disabled={locked}
             onChange={(value) => update("name", value)}
           />
         </Field>
         <Field label="Action Type" required>
           <Select
-            value={draft.actionType}
-            onChange={(value) =>
-              update("actionType", value as Offer["actionType"])
-            }
+            value={actionType}
+            disabled
+            onChange={() => undefined}
             options={[
               { value: "Add", label: "Add" },
               { value: "Modify", label: "Modify" },
@@ -282,6 +331,7 @@ export function OfferPanel({
         <Field label="Channel" required>
           <Select
             value={draft.channel}
+            disabled={locked}
             onChange={(value) => update("channel", value as Offer["channel"])}
             options={[
               { value: "POS", label: "POS" },
@@ -292,6 +342,7 @@ export function OfferPanel({
         <Field label="Acquirer" required>
           <Select
             value={draft.acquirer}
+            disabled={locked}
             onChange={() => undefined}
             options={[{ value: "NI", label: "NI" }]}
           />
@@ -303,6 +354,7 @@ export function OfferPanel({
           <Textarea
             value={draft.description}
             placeholder="Short description of this plan"
+            disabled={locked}
             onChange={(value) => update("description", value)}
           />
         </Field>
@@ -312,48 +364,14 @@ export function OfferPanel({
         <SectionTitle
           title="Tenure details"
           hint="Each tenure can have its own parameters"
-          action={
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                setDraft((current) => ({
-                  ...current,
-                  tenures: [...current.tenures, { ...EMPTY_TENURE }],
-                }))
-              }
-            >
-              <Plus className="size-3.5" />
-              Add tenure
-            </Button>
-          }
         />
 
         <div className="space-y-4">
           {draft.tenures.map((item, index) => (
             <div key={index} className="bg-muted/70 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  Tenure {index + 1}
-                </p>
-                {draft.tenures.length > 1 && (
-                  <button
-                    type="button"
-                    aria-label={`Remove tenure ${index + 1}`}
-                    onClick={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        tenures: current.tenures.filter(
-                          (_, position) => position !== index,
-                        ),
-                      }))
-                    }
-                    className="text-muted-foreground transition-colors hover:text-destructive"
-                  >
-                    <XCircle className="size-4" />
-                  </button>
-                )}
-              </div>
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Tenure {index + 1}
+              </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
@@ -448,6 +466,7 @@ export function OfferPanel({
           <Input
             value={draft.subvention}
             placeholder="e.g. 0.00"
+            disabled={locked}
             onChange={(value) => update("subvention", value)}
           />
         </Field>
@@ -455,6 +474,7 @@ export function OfferPanel({
           <DateInput
             value={draft.expiryDate}
             invalid={Boolean(errors.expiryDate)}
+            disabled={locked}
             onChange={(value) => update("expiryDate", value)}
           />
         </Field>
@@ -462,12 +482,14 @@ export function OfferPanel({
           <DateInput
             value={draft.actionDate}
             invalid={Boolean(errors.actionDate)}
+            disabled={locked}
             onChange={(value) => update("actionDate", value)}
           />
         </Field>
         <Field label="Merchant Fee Type">
           <Select
             value={draft.merchantFeeTyp}
+            disabled={locked}
             onChange={() => undefined}
             options={[{ value: "P", label: "P — Percentage" }]}
           />
@@ -476,6 +498,7 @@ export function OfferPanel({
           <Input
             value={draft.merchantFee}
             placeholder="e.g. 2.00"
+            disabled={locked}
             onChange={(value) => update("merchantFee", value)}
           />
         </Field>
@@ -483,12 +506,14 @@ export function OfferPanel({
           <Input
             value={draft.bankRevPer}
             placeholder="e.g. 50.00"
+            disabled={locked}
             onChange={(value) => update("bankRevPer", value)}
           />
         </Field>
         <Field label="Merchant Commission Type">
           <Select
             value={draft.merchantCommissionType}
+            disabled={locked}
             onChange={(value) =>
               update(
                 "merchantCommissionType",
@@ -505,12 +530,14 @@ export function OfferPanel({
           <Input
             value={draft.merchantCommission}
             placeholder="e.g. 2.5"
+            disabled={locked}
             onChange={(value) => update("merchantCommission", value)}
           />
         </Field>
         <Field label="Slice Flag">
           <Select
             value={draft.sliceFlag}
+            disabled={locked}
             onChange={(value) => update("sliceFlag", value as Offer["sliceFlag"])}
             options={[
               { value: "2", label: "Slice by Network" },
