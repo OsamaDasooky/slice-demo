@@ -131,7 +131,7 @@ export function OfferPanel({
   tenor?: string
   onClose: () => void
 }) {
-  const { offers, submitRequest, pushToast } = useStore()
+  const { offers, submitRequest, pushToast, hasPendingFor } = useStore()
   const actionType: Offer["actionType"] = mode === "modify" ? "Modify" : "Add"
   const locked = mode === "add-tenure"
 
@@ -156,6 +156,28 @@ export function OfferPanel({
   }, [mode, offer, tenor])
   const [draft, setDraft] = useState<Offer>(initial)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [source, setSource] = useState<Offer | undefined>(offer)
+  /** The approved offer this request changes: the picked offer when adding a tenure. */
+  const base = mode === "add-tenure" ? source : offer
+
+  const pickableOffers = offers.filter(
+    (item) => !hasPendingFor("Offer", item.offerId),
+  )
+
+  const pickOffer = (offerId: string) => {
+    const picked = offers.find((item) => item.offerId === offerId)
+    setSource(picked)
+    setErrors({})
+    setDraft(
+      picked
+        ? {
+            ...structuredClone(picked),
+            actionType: "Add",
+            tenures: [{ ...EMPTY_TENURE }],
+          }
+        : blankOffer(),
+    )
+  }
 
   const update = <K extends keyof Offer>(key: K, value: Offer[K]) => {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -177,6 +199,12 @@ export function OfferPanel({
   const validate = () => {
     const next: Record<string, string> = {}
 
+    if (mode === "add-tenure" && !source) {
+      next.offerId = "Select the offer to add a tenure to"
+      setErrors(next)
+      return false
+    }
+
     if (!/^[A-Za-z0-9]{1,8}$/.test(draft.offerId.trim())) {
       next.offerId = "Alphanumeric, maximum 8 characters"
     } else if (
@@ -192,9 +220,9 @@ export function OfferPanel({
     const seenTenors = new Set<string>()
     const existingTenors = new Set(
       mode === "add-tenure"
-        ? (offer?.tenures ?? []).map((item) => item.tenor.trim())
+        ? (base?.tenures ?? []).map((item) => item.tenor.trim())
         : mode === "modify"
-          ? (offer?.tenures ?? [])
+          ? (base?.tenures ?? [])
               .filter((item) => item.tenor !== tenor)
               .map((item) => item.tenor.trim())
           : [],
@@ -256,14 +284,14 @@ export function OfferPanel({
       createdAt: draft.createdAt || "Pending approval",
     }
 
-    if ((mode === "modify" || mode === "add-tenure") && offer) {
+    if ((mode === "modify" || mode === "add-tenure") && base) {
       const submitted =
         mode === "add-tenure"
-          ? { ...normalised, tenures: [...offer.tenures, ...normalised.tenures] }
+          ? { ...normalised, tenures: [...base.tenures, ...normalised.tenures] }
           : {
               ...normalised,
-              tenures: offer.tenures.map((item) =>
-                item.tenor === (tenor ?? offer.tenures[0]?.tenor)
+              tenures: base.tenures.map((item) =>
+                item.tenor === (tenor ?? base.tenures[0]?.tenor)
                   ? normalised.tenures[0]
                   : item,
               ),
@@ -272,8 +300,8 @@ export function OfferPanel({
         type: "Offer",
         action: "Modify",
         entityName: `${submitted.offerId} · ${submitted.name}`,
-        targetId: offer.offerId,
-        changes: diffOffers(offer, submitted),
+        targetId: base.offerId,
+        changes: diffOffers(base, submitted),
         payload: { offer: submitted },
       })
     } else {
@@ -291,7 +319,13 @@ export function OfferPanel({
   return (
     <SidePanel
       open={open}
-      title={mode === "modify" ? `Modify Offer: ${offer?.offerId}` : "Add New Offer"}
+      title={
+        mode === "modify"
+          ? `Modify Offer: ${offer?.offerId}`
+          : mode === "add-tenure"
+            ? "Add New Tenure"
+            : "Add New Offer"
+      }
       submitLabel={
         mode === "modify" ? "Submit changes" : mode === "add-tenure" ? "Submit tenure" : "Add offer"
       }
@@ -300,13 +334,27 @@ export function OfferPanel({
     >
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Offer ID" required error={errors.offerId}>
-          <Input
-            value={draft.offerId}
-            invalid={Boolean(errors.offerId)}
-            placeholder="e.g. FAB0004"
-            disabled={locked}
-            onChange={(value) => update("offerId", value)}
-          />
+          {mode === "add-tenure" ? (
+            <Select
+              value={source?.offerId ?? ""}
+              invalid={Boolean(errors.offerId)}
+              onChange={pickOffer}
+              options={[
+                { value: "", label: "Select an offer" },
+                ...pickableOffers.map((item) => ({
+                  value: item.offerId,
+                  label: item.offerId,
+                })),
+              ]}
+            />
+          ) : (
+            <Input
+              value={draft.offerId}
+              invalid={Boolean(errors.offerId)}
+              placeholder="e.g. FAB0004"
+              onChange={(value) => update("offerId", value)}
+            />
+          )}
         </Field>
         <Field label="Offer Name" required error={errors.name}>
           <Input

@@ -47,10 +47,21 @@ export function OffersList() {
                 <Upload className="size-4" />
                 Upload Offers File
               </Button>
-              <Button onClick={() => setPanel({ mode: "add" })}>
-                <Plus className="size-4" />
-                New
-              </Button>
+              <ActionMenu
+                trigger={{ label: "New", icon: <Plus className="size-4" /> }}
+                items={[
+                  {
+                    label: "New offer",
+                    icon: <Plus className="size-4" />,
+                    onSelect: () => setPanel({ mode: "add" }),
+                  },
+                  {
+                    label: "Add new tenure",
+                    icon: <ListPlus className="size-4" />,
+                    onSelect: () => setPanel({ mode: "add-tenure" }),
+                  },
+                ]}
+              />
             </>
           ) : null
         }
@@ -122,15 +133,6 @@ export function OffersList() {
                           : undefined,
                         onSelect: () =>
                           setPanel({ mode: "modify", offer, tenor: tenure?.tenor }),
-                      },
-                      {
-                        label: "Add Tenure",
-                        icon: <ListPlus className="size-4" />,
-                        disabled: pending,
-                        disabledHint: pending
-                          ? "A change request is already pending"
-                          : undefined,
-                        onSelect: () => setPanel({ mode: "add-tenure", offer }),
                       },
                       {
                         label: "Delete",

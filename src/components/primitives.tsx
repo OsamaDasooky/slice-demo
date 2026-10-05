@@ -1,6 +1,6 @@
 import clsx from "clsx"
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { AlertTriangle, MoreVertical, X } from "lucide-react"
+import { AlertTriangle, ChevronDown, MoreVertical, X } from "lucide-react"
 import { fromDateInput, toDateInput } from "../lib/format"
 
 export function cn(...inputs: Array<string | false | null | undefined>) {
@@ -228,7 +228,14 @@ export type MenuItem = {
   tone?: "default" | "danger"
 }
 
-export function ActionMenu({ items }: { items: MenuItem[] }) {
+export function ActionMenu({
+  items,
+  trigger,
+}: {
+  items: MenuItem[]
+  /** Renders a labelled primary button instead of the row kebab icon. */
+  trigger?: { label: string; icon?: ReactNode }
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -250,21 +257,35 @@ export function ActionMenu({ items }: { items: MenuItem[] }) {
 
   return (
     <div className="relative flex justify-end" ref={ref}>
-      <button
-        type="button"
-        aria-label="Open actions"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="rounded p-1.5 text-portal-ink transition-colors hover:bg-muted"
-      >
-        <MoreVertical className="size-4" />
-      </button>
+      {trigger ? (
+        <Button
+          onClick={() => setOpen((value) => !value)}
+          className="pr-3"
+        >
+          {trigger.icon}
+          {trigger.label}
+          <ChevronDown className="size-4" />
+        </Button>
+      ) : (
+        <button
+          type="button"
+          aria-label="Open actions"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="rounded p-1.5 text-portal-ink transition-colors hover:bg-muted"
+        >
+          <MoreVertical className="size-4" />
+        </button>
+      )}
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-8 z-30 min-w-52 overflow-hidden rounded-[3px] bg-action-menu py-1 text-action-menu-foreground shadow-popover"
+          className={cn(
+            "absolute right-0 z-30 min-w-52 overflow-hidden rounded-[3px] bg-action-menu py-1 text-action-menu-foreground shadow-popover",
+            trigger ? "top-11" : "top-8",
+          )}
         >
           {items.map((item) => (
             <div key={item.label}>
